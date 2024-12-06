@@ -1,0 +1,75 @@
+#lang racket
+
+(#%require "teken-adt.rkt")
+
+(#%provide maak-spook-adt)
+
+(define width 30)
+(define height 30)
+
+(define (maak-spook-adt x y)
+  (let* ((pos-x x)
+         (pos-y y)
+         (radius-x (+ pos-x width))
+         (radius-y (+ pos-y height))
+         (radius-voor-punten (- pos-y 40))
+         (1-stap 2)
+         (begin-interval pos-x)
+         (eind-interval (+ pos-x 350))
+         (richting 'r)
+         (getekend #f))
+
+    (define (teken! teken-adt)
+      ((teken-adt 'teken-spook!) spook-dispatch)
+      (set! getekend #t))
+
+    (define (verwijder! teken-adt)
+      (when (eq? getekend #t)
+        ((teken-adt 'verwijder-spook!) spook-dispatch)
+        (set! getekend #f)))
+
+    (define (beweeg!)
+      (cond ((eq? richting 'r) (ga-naar-rechts))
+            ((eq? richting 'l) (ga-naar-links))))
+
+    (define (verander-richting!)
+      (cond ((> radius-x eind-interval) (set! richting 'l))
+            ((< pos-x begin-interval) (set! richting 'r))))
+
+    (define (ga-naar-rechts)
+      (set! pos-x (+ pos-x 1-stap))
+      (set! radius-x (+ pos-x width)))
+
+    (define (ga-naar-links)
+      (set! pos-x (- pos-x 1-stap))
+      (set! radius-x (+ pos-x width)))
+
+    (define (collisie? obj-x obj-y obj-rx obj-ry)
+      (and (or (<= obj-x pos-x obj-rx)
+               (<= obj-x radius-x obj-rx))
+           (<= obj-y pos-y obj-ry)
+           (<= obj-y radius-y obj-ry)
+           (eq? getekend #t)))
+
+      (define (obj-boven-ton obj-x obj-rx obj-ry)
+      (and (<= radius-voor-punten obj-ry pos-y)
+           (or (= pos-x obj-x)
+               (= pos-x obj-rx)
+               (= radius-x obj-x)
+               (= radius-x obj-rx))))
+    
+    (define (spook-dispatch m)
+      (cond ((eq? m 'teken!) teken!)
+            ((eq? m 'verwijder!) verwijder!)
+            ((eq? m 'x) pos-x)
+            ((eq? m 'y) pos-y)
+            ((eq? m 'rx) radius-x)
+            ((eq? m 'ry) radius-y)
+            ((eq? m 'obj-boven-ton) obj-boven-ton)
+            ((eq? m 'rechts) (ga-naar-rechts))
+            ((eq? m 'links) (ga-naar-links))
+            ((eq? m 'beweeg!) (beweeg!))
+            ((eq? m 'verander-richting!) (verander-richting!))
+            ((eq? m 'collisie?) collisie?)
+            ((eq? m 'getekend) getekend)))
+    spook-dispatch))
